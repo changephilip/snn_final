@@ -9,8 +9,8 @@ class HopfieldTSP():
         self.nCities = cities.shape[0]
         self.u0 = 0.02
         self.deltaT = 1e-4
-        self.A = 200
-        self.D =100
+        self.A = 1000
+        self.D =10
         self.W = np.zeros((self.nCities,self.nCities))
         self.U = np.zeros((self.nCities,self.nCities))
         self.V = np.zeros((self.nCities,self.nCities))
@@ -63,8 +63,10 @@ class HopfieldTSP():
     def __call__(self):
         running_energy = []
         iter = 0
-        while not self.check():
+        while not self.check() and iter < 1000000:
             iter += 1
+            if iter %10000 ==0 :
+                print(iter,running_energy[-1])
             for i in range(self.nCities):
                 for j in range(self.nCities):
                     self.U[i,j] += self.deltaT * self.diff(i,j)
@@ -74,8 +76,32 @@ class HopfieldTSP():
             running_energy.append(energy)
         return running_energy, np.where(self.V<0.2,0,1), iter
 
-if __name__ == "__main__":
+
+def test():
     cities = np.array([[2,6],[2,4],[1,3],[4,6],[5,5],[4,4],[6,4],[3,2]])
+    solver = HopfieldTSP(cities)
+    energy, answer,iter = solver()
+    print(answer)
+    print(iter)
+    #print(energy)
+    plt.plot(energy)
+    plt.show()
+
+#ATT48 is a set of 48 cities (US state capitals) from TSPLIB. The minimal tour has length 33523.     
+#https://people.sc.fsu.edu/~jburkardt/datasets/tsp/att48_xy.txt
+def testUS48():
+    cities=np.loadtxt('att48_xy.txt')
+    solver = HopfieldTSP(cities)
+    energy, answer,iter = solver()
+    print(answer)
+    print(iter)
+    #print(energy)
+    plt.plot(energy)
+    plt.show()
+
+if __name__ == "__main__":
+    #cities = np.array([[2,6],[2,4],[1,3],[4,6],[5,5],[4,4],[6,4],[3,2]])
+    cities=np.loadtxt('att48_xy_8.txt')
     solver = HopfieldTSP(cities)
     energy, answer,iter = solver()
     print(answer)
