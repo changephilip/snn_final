@@ -2,144 +2,112 @@ import numpy as np
 import pandas as pd
 import time
 import sys
-import tkinter as tk
 
-UNIT = 40   # pixels
-MAZE_H = 5  # grid height
-MAZE_W = 5  # grid width
+def retCord(something):
+    return np.array(list(zip(something[0],something[1])))
 
+def readMaze():
+    H=49
+    W=65
+    import linecache
+    t=linecache.getlines('maze.csv')
 
-class Maze(tk.Tk, object):
+    npMaze=np.zeros((H,W),dtype=int)
+    
+    for j in range(0,H):
+        thisRow = t[j].split()[0]
+        for i in range (0,W):
+            npMaze[j,i]=thisRow[i]
+    wall = np.where(npMaze==0)
+    road = np.where(npMaze==1)
+    target = np.where(npMaze==2)
+    return npMaze,retCord(wall),retCord(road),retCord(target)
+
+def randomStart(road):
+    import random
+    n = random.randint(0,len(road))
+    return road[n]
+
+class Maze():
     def __init__(self):
-        super(Maze, self).__init__()
         self.action_space = ['u', 'd', 'r', 'l']
         self.n_actions = len(self.action_space)
-        self.title('maze')
-        self.geometry('{0}x{1}'.format(MAZE_H * UNIT, MAZE_H * UNIT))
-        self._build_maze()
 
-    def _build_maze(self):
-        self.canvas = tk.Canvas(self, bg='white',
-                           height=MAZE_H * UNIT,
-                           width=MAZE_W * UNIT)
+        self.H=49
+        self.W=65
+        
+        import linecache
+        t=linecache.getlines('maze.csv')
 
-        # create grids
-        for c in range(0, MAZE_W * UNIT, UNIT):
-            x0, y0, x1, y1 = c, 0, c, MAZE_H * UNIT
-            self.canvas.create_line(x0, y0, x1, y1)
-        for r in range(0, MAZE_H * UNIT, UNIT):
-            x0, y0, x1, y1 = 0, r, MAZE_W * UNIT, r
-            self.canvas.create_line(x0, y0, x1, y1)
+        self.npMaze=np.zeros((self.H,self.W),dtype=int)
+    
+        for j in range(0,self.H):
+            thisRow = t[j].split()[0]
+            for i in range (0,self.W):
+                self.npMaze[j,i]=thisRow[i]
+        self.wall = retCord(np.where(self.npMaze==0))
+        self.road = retCord(np.where(self.npMaze==1))
+        self.terminal = retCord(np.where(self.npMaze==2))[0]
 
-        # create origin
-        origin = np.array([20, 20])
+        print(self.terminal)
 
-        # hell
-        hell1_center = origin + np.array([UNIT * 3, UNIT])
-        self.hell1 = self.canvas.create_rectangle(
-            hell1_center[0] - 15, hell1_center[1] - 15,
-            hell1_center[0] + 15, hell1_center[1] + 15,
-            fill='black')
-        # hell
-        hell2_center = origin + np.array([UNIT, UNIT * 2])
-        self.hell2 = self.canvas.create_rectangle(
-            hell2_center[0] - 15, hell2_center[1] - 15,
-            hell2_center[0] + 15, hell2_center[1] + 15,
-            fill='black')
-        # hell
-        hell3_center = origin + np.array([UNIT, UNIT * 3])
-        self.hell3 = self.canvas.create_rectangle(
-            hell3_center[0] - 15, hell3_center[1] - 15,
-            hell3_center[0] + 15, hell3_center[1] + 15,
-            fill='black')
-        # hell
-        hell4_center = origin + np.array([UNIT * 2, UNIT])
-        self.hell4 = self.canvas.create_rectangle(
-            hell4_center[0] - 15, hell4_center[1] - 15,
-            hell4_center[0] + 15, hell4_center[1] + 15,
-            fill='black')
-        # create oval
-        oval_center = origin + UNIT * 2
-        self.oval = self.canvas.create_oval(
-            oval_center[0] - 15, oval_center[1] - 15,
-            oval_center[0] + 15, oval_center[1] + 15,
-            fill='yellow')
+        self.s = randomStart(self.road)
+        #self.s=np.array([37,60])
+        #print(self.npMaze[37][60])
+        
 
-        # create red rect
-        self.rect = self.canvas.create_rectangle(
-            origin[0] - 15, origin[1] - 15,
-            origin[0] + 15, origin[1] + 15,
-            fill='red')
 
-        # pack all
-        self.canvas.pack()
+    def eq(self,pointA,pointB):
+        if pointA[0] == pointB[0] and pointA[1]==pointB[1]:
+            return True
+        else:
+            return False
+             
+    def checkBoundary(self,point):
+        if point[0] >=  self.H or point[0] <=0:
+            return False
+        if point[1] >= self.W or point[1] <=0:
+            return False
+        return True
 
     def reset(self):
-        self.update()
-        time.sleep(0.5)
-        self.canvas.delete(self.rect)
-        origin = np.array([20, 20])
-        self.rect = self.canvas.create_rectangle(
-            origin[0] - 15, origin[1] - 15,
-            origin[0] + 15, origin[1] + 15,
-            fill='red')
-        # return observation
-        return self.canvas.coords(self.rect)
+        return self.s
 
     def step(self, action):
-        s = self.canvas.coords(self.rect)
-        base_action = np.array([0, 0])
-        if action == 0:   # up
-            if s[1] > UNIT:
-                base_action[1] -= UNIT
-        elif action == 1:   # down
-            if s[1] < (MAZE_H - 1) * UNIT:
-                base_action[1] += UNIT
-        elif action == 2:   # left
-            if s[0] < (MAZE_W - 1) * UNIT:
-                base_action[0] += UNIT
-        elif action == 3:   # right
-            if s[0] > UNIT:
-                base_action[0] -= UNIT
-
-        self.canvas.move(self.rect, base_action[0], base_action[1])  # move agent
-
-        s_ = self.canvas.coords(self.rect)  # next state
-
+        if action == 0 and self.s[0]!= 0:   # up
+            s_ = self.s + np.array([-1,0])
+        elif action == 1 and self.s[0]!=48:   # down
+            s_ = self.s + np.array([1,0])
+        elif action == 2 and self.s[1]!=0 :   # left
+            s_ = self.s + np.array([0,-1])
+        elif action == 3 and self.s[1]!=64:   # right
+            s_ = self.s + np.array([0,1])
+        
         # reward function
-        if s_ == self.canvas.coords(self.oval):
-            reward = 1
+        if self.eq(s_,self.terminal):
+            reward = 100
             done = True
             s_ = 'terminal'
-        elif s_ in [self.canvas.coords(self.hell1), self.canvas.coords(self.hell2), self.canvas.coords(self.hell3), self.canvas.coords(self.hell4)]:
-            reward = -1
-            done = True
-            s_ = 'terminal'
-        else:
-            reward = 0
+        elif self.npMaze[s_[0]][s_[1]]==0:
+            reward = -10
             done = False
+            s_ = self.s
+        else:
+            reward = -0.1
+            done = False
+            self.s = s_
 
+        #print("return:",s_)
         return s_, reward, done
 
     def render(self):
         time.sleep(0.1)
-        self.update()
 
-
-def update():
-    for t in range(10):
-        s = env.reset()
-        while True:
-            env.render()
-            a = 1
-            s, r, done = env.step(a)
-            if done:
-                break
 
 
 
 class QLearningTable:
-    def __init__(self, actions, learning_rate=0.01, reward_decay=0.9, e_greedy=0.9):
+    def __init__(self, actions, learning_rate=0.5, reward_decay=0.9, e_greedy=0.6):
         self.actions = actions  # a list
         self.lr = learning_rate
         self.gamma = reward_decay
@@ -182,45 +150,88 @@ class QLearningTable:
 def update():
     # 跟着行为轨迹
     df = pd.DataFrame(columns=('state','action_space','reward','Q','action'))
-    # 转换为迷宫坐标（x,y）
-    def set_state(observation):
-        p = []
-        p.append(int((observation[0]-5)/40))
-        p.append(int((observation[1]-5)/40))
-        return p
-    for episode in range(100):
+    iter = 0
+    flag = False
+    for episode in range(1):
         # initial observation
-        observation = env.reset()
-        observation = set_state(observation)
-
-        while True:
+        observation = env.s
+        while iter < 100000:
             # fresh env
-            env.render()
+            #env.render()
 
             # RL choose action based on observation
             action = RL.choose_action(str(observation))
             # RL take action and get next observation and reward
             observation_, reward, done = env.step(action)
-            if observation_ != 'terminal':
-                observation_ = set_state(observation_)                                    
             # RL learn from this transition
             RL.learn(str(observation), action, reward, str(observation_))
             q = RL.q_table.loc[str(observation),action]
             df = df.append(pd.DataFrame({'state':[observation],'action_space':[env.action_space[action]],'reward':[reward],'Q':[q],'action':action}), ignore_index=True)
+
             # swap observation
             observation = observation_
-
             # break while loop when end of this episode
             if done:
+                flag=True
+
                 break
+            if reward!=-10:
+                iter=iter+1
 
     # end of game
     print('game over')
+    if flag:
+        print("Find The Path To Exit\n")
+    else:
+        print("No Path to Exit")
     df.to_csv('action.csv')
     RL.q_table.to_csv('q_table.csv')
-    env.destroy()
+    return df,flag
+    #env.destroy()
+
+import networkx as nx
+def plotPath(env:Maze,T):
+    tt = T[T['reward']==-0.1]['state']
+    nodeList=[]
+    for node in tt:
+        if tuple(node) not in nodeList:
+            x=tuple(node)[0]
+            y=tuple(node)[1]
+            if env.npMaze[x][y]==1:
+                nodeList.append(tuple(node))
+    
+    N=len(nodeList)
+    G = nx.Graph()
+    for n in range(0,N):
+        G.add_node(n)
+
+    for i in range(0,N):
+        for j in range(i+1,N):
+            pA=nodeList[i]
+            pB=nodeList[j]
+            if np.abs(pA[0]-pB[0])==1 and np.abs(pA[1]==pB[1]):
+                G.add_edge(i,j)
+            if np.abs(pA[1]-pB[1])==1 and np.abs(pA[0]==pB[0]):
+                G.add_edge(i,j)
+
+    path = nx.dijkstra_path(G,0,N-1)
+    pMaze=env.npMaze.copy()
+    for n in path[1:]:
+        i=nodeList[n][0]
+        j=nodeList[n][1]
+        pMaze[i][j]=3
+    
+    
+    pMaze[nodeList[0][0]][nodeList[0][1]]=4
+    import matplotlib.pyplot as plt
+    plt.imshow(pMaze)
+    plt.show()
 
 if __name__ == '__main__':
     env = Maze()
-    env.after(100, update)
-    env.mainloop()
+    RL = QLearningTable(actions=list(range(env.n_actions)))
+    T,flag=update()
+    
+    print(RL.q_table)
+    if flag:
+        plotPath(env,T)
