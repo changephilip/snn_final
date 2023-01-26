@@ -63,6 +63,7 @@ class HopfieldTSP():
     def __call__(self):
         running_energy = []
         iter = 0
+        #restrict steps < 1000000
         while not self.check() and iter < 1000000:
             iter += 1
             if iter %10000 ==0 :
