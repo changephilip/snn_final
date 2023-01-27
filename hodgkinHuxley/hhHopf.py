@@ -5,7 +5,7 @@ import matplotlib.pyplot as plt
 # 10.1016/j.chaos.2006.01.035
 
 # V = sym.Symbol('V',cls=sym.Function)
-V, m, h, n = sym.symbols('V,m,h,n')
+V, Ve, m, h, n ,Iext= sym.symbols('V,Ve,m,h,n,Iext')
 t = sym.Symbol('t')
 
 Cm = 1
@@ -30,8 +30,8 @@ bn = 0.125 * sym.exp(-1.0 * V / 80.0)
 
 eqs = []
 
-eq1 = (- gNa * (m**3) * h * (V - VNa) -
-       gK * (n**4)*(V - VK) - gL*(V - VL))
+eq1 = (- gNa * (m**3) * h * (V +Ve - VNa) -
+       gK * (n**4)*(V +Ve - VK) - gL*(V +Ve - VL))  + I
 
 eq2 = sym.Eq(am * (1.0 - m) - bm * m)
 
@@ -43,10 +43,13 @@ eqm = sym.solve(eq2,m)[0]
 eqh = sym.solve(eq3,h)[0]
 eqn = sym.solve(eq4,n)[0]
 
+
+me = eqm.subs(V,0)
+he = eqh.subs(V,0)
+ne = eqn.subs(V,0)
 eqFinal=eq1.replace(m,eqm).replace(h,eqh).replace(n,eqn)
 
 from sympy.plotting import plot
 
-plot(eqFinal,(V,-100,0))
+#plot(eqFinal,(V,-200,0))
 
-deq1= sym.Eq(sym.diff(V))
