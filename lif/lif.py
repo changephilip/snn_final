@@ -117,7 +117,7 @@ def runManyI(s):
     tm = np.vstack((i,ws,isim))
     tv= np.vstack((i,ws,isiv))
 
-    np.savetxt("m_s{s}.csv".format(s=str(s)),tm.T)
+    np.savetxt("e_s{s}.csv".format(s=str(s)),tm.T)
     np.savetxt("v_s{s}.csv".format(s=str(s)),tv.T)
     return isim,isiv,i
 
@@ -216,7 +216,6 @@ sigma 0.0 -> 2.0, 0.1
 
 
 if __name__ == '__main__':
-    #s=np.arange(0.0,2.0,0.05)
     s=range(0,20)
     print(s)
     p=Pool(8)
@@ -226,3 +225,6 @@ if __name__ == '__main__':
     p.map(runManyI,list(s))
     p.close()
     p.join()
+    #计算完成后
+    #合并e_s*.csv即可获得gride.csv
+    #合并v_s*.csv即可获得gridv.csv
