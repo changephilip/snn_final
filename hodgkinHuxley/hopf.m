@@ -58,16 +58,16 @@ jm = jacobian(eq2,[V,m,h,n]);
 jh = jacobian(eq3,[V,m,h,n]);
 jn = jacobian(eq4,[V,m,h,n]);
 
-%以I为参数，查找分岔点，将1-200mA以0.1为间隔分成2000份
-loop=2000;
-I = (1:loop)*0.1;
-Vstore = zeros(loop,1);
+%以I为参数，查找分岔点，将1-200mA以0.01为间隔分成20000份
+loop=1000;
+I = (1:loop)*0.01;
+%Vstore = zeros(loop,1);
 for i=1:(loop-1)
     %求解Ic时的平衡点
     t=subs(eq1F,Iext=I(i));
     ve = vpasolve(t,V);
     
-    Vstore(i)=ve;
+    %Vstore(i)=ve;
     
     me = solve(subs(eq2,V=ve),m);
     he = solve(subs(eq3,V=ve),h);
